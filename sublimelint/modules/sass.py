@@ -1,4 +1,4 @@
-# ruby_haml.py - sublimelint package for checking coffee-script files
+# sass.py - sublimelint package for checking coffee-script files
 
 import subprocess, os
 
@@ -10,7 +10,7 @@ def check(codeString, filename):
         info.wShowWindow = subprocess.SW_HIDE
 
     process = subprocess.Popen(
-        ('haml', '--check', '--stdin'),
+        ('sass', '--check', '--scss', '--stdin'),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         startupinfo=info
     )
@@ -19,13 +19,20 @@ def check(codeString, filename):
 
 import re
 __all__ = ['run', 'language']
-language = 'Ruby Haml'
+language = 'SASS'
 
-compile_err = re.compile('^Syntax error on line ([0-9]+): (.*)')
+# Syntax error: Invalid CSS after "": expected selector, was ""
+#         on line 12 of standard input
+#   Use --trace for backtrace.
+
+compile_err  = re.compile('^Syntax error: (.*)$')
+compile_line = re.compile('^\s+on line ([0-9]+) .*')
 
 def run(code, view, filename='untitled'):
+    # print ">>> Checking SASS"
 
     errors = check(code, filename)
+    # print ">>> Errors: %s" % errors
 
     lines = set()
     underline = [] # leave this here for compatibility with original plugin
@@ -38,13 +45,16 @@ def run(code, view, filename='untitled'):
         else:
             errorMessages[lineno] = [message]
 
-    for line in errors.splitlines():
-        match = compile_err.match(line)
+    error_lines = errors.splitlines()
+    if error_lines:
+        match = compile_err.match(error_lines[0])
         if match:
-            line, error = match.groups()
-        else:
-            continue
+            print "line>> %s" % errors
+            error = match.groups()[0]
+            match = compile_line.match(error_lines[1])
+            line = match.groups()[0]
 
+        print "Found: %s, %s" % (line, error)
         lineno = int(line) - 1
         lines.add(lineno)
         addMessage(lineno, error)
