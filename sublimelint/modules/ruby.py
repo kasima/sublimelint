@@ -9,13 +9,13 @@ def check(codeString, filename):
     info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     info.wShowWindow = subprocess.SW_HIDE
 
-  process = subprocess.Popen(('ruby', '-wc'), 
-                stdin=subprocess.PIPE, 
+  process = subprocess.Popen((os.path.expanduser('~/.rvm/bin/rvm-auto-ruby'), '-wc'),
+                stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 startupinfo=info)
   result = process.communicate(codeString)[0]
-  
+
   return result
 
 # start sublimelint Ruby plugin
@@ -30,10 +30,10 @@ description =\
 
 def run(code, view, filename='untitled'):
   errors = check(code, filename)
-  
+
   lines = set()
   underline = [] # leave this here for compatibility with original plugin
-  
+
   errorMessages = {}
   def addMessage(lineno, message):
     message = str(message)
@@ -41,15 +41,16 @@ def run(code, view, filename='untitled'):
       errorMessages[lineno].append(message)
     else:
       errorMessages[lineno] = [message]
-  
+
   for line in errors.splitlines():
     match = re.match(r'^.+:(?P<line>\d+):\s+(?P<error>.+)', line)
 
     if match:
       error, line = match.group('error'), match.group('line')
 
-      lineno = int(line) - 1
-      lines.add(lineno)
-      addMessage(lineno, error)
+      if not re.match(r'^warning\:', error):
+        lineno = int(line) - 1
+        lines.add(lineno)
+        addMessage(lineno, error)
 
   return underline, lines, errorMessages, True
