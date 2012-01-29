@@ -97,7 +97,7 @@ def run(module, view):
 
 def validate(view):
 	for language in languages:
-		if language in view.settings().get("syntax"):
+		if language in view.settings().get("syntax").split('/'):
 			run(languages[language], view)
 			break
 
